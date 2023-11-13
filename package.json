@@ -1,0 +1,21 @@
+{
+  "name": "llama-ai-discord",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "ts-node src/index.ts"
+  },
+  "author": "spejik",
+  "license": "MIT",
+  "dependencies": {
+    "axios": "^1.6.1",
+    "discord.js": "^14.14.0",
+    "dotenv": "^16.3.1",
+    "google-translate-api-x": "^10.6.7",
+    "openai": "^4.17.4"
+  },
+  "devDependencies": {
+    "ts-node": "^10.9.1"
+  }
+}

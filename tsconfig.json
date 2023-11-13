@@ -1,0 +1,11 @@
+{
+	"compilerOptions": {
+		"allowSyntheticDefaultImports": true,
+		"lib": [
+			"ES2022"
+		],
+		"module": "NodeNext",
+		"moduleResolution": "NodeNext",
+		"target": "ESNext"
+	}
+}
