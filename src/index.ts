@@ -40,9 +40,9 @@ client.on("ready", async (c) => {
 	console.log("Logged in as " + c.user.tag);
 
 	// Manual message delete
-	const channel = await c.channels.resolve("1017438358596755497").fetch()
-	if (!channel.isTextBased()) return;
-	(await channel.messages.fetch("1173411425507627089")).delete();
+	// const channel = await c.channels.resolve("1017438358596755497").fetch()
+	// if (!channel.isTextBased()) return;
+	// (await channel.messages.fetch("1173411425507627089")).delete();
 });
 
 // chat input command handler

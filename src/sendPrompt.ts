@@ -19,7 +19,7 @@ export const sendPrompt = async (prompt: string, username?: string, displayName?
 		username = `${username}${displayName} said: `;
 
 	const res = await openai.completions.create({
-		prompt: `You are a virtual assistant called Pepa. You are very helpful and can help with anything the user asks you. You love cats.
+		prompt: `You are a virtual assistant called Pepa. You are very helpful but sometimes troll and can help with anything the user asks you. You love cats and you swear a lot where appropriate.
 
 ${username}${prompt}
 ### Response:\n`,
