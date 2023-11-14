@@ -39,10 +39,12 @@ const rest = new REST().setToken(token);
 client.on("ready", async (c) => {
 	console.log("Logged in as " + c.user.tag);
 
+	console.debug((await c.guilds.fetch(guildId)).roles.botRoleFor(c.user).permissions.toArray())
+
 	// Manual message delete
-	// const channel = await c.channels.resolve("1017438358596755497").fetch()
+	// const channel = await c.channels.resolve("1017438358596755497").fetch();
 	// if (!channel.isTextBased()) return;
-	// (await channel.messages.fetch("1173411425507627089")).delete();
+	// (await channel.messages.fetch("1173770275704295445")).delete();
 });
 
 // chat input command handler

@@ -8,6 +8,9 @@ dependencies:
   axios:
     specifier: ^1.6.1
     version: 1.6.1
+  chalk:
+    specifier: ^5.3.0
+    version: 5.3.0
   discord.js:
     specifier: ^14.14.0
     version: 14.14.0
@@ -232,6 +235,11 @@ packages:
 
   /base-64@0.1.0:
     resolution: {integrity: sha512-Y5gU45svrR5tI2Vt/X9GPd3L0HNIKzGu202EjxrXMpuc2V2CiKgemAbUUsqYmZJvPtCXoUKjNZwBJzsNScUbXA==}
+    dev: false
+
+  /chalk@5.3.0:
+    resolution: {integrity: sha512-dLitG79d+GV1Nb/VYcCDFivJeK1hiukt9QjRNVOsUtTy1rR1YJsmpGGTZ3qJos+uw7WmWF4wUwBd9jxjocFC2w==}
+    engines: {node: ^12.17.0 || ^14.13 || >=16.0.0}
     dev: false
 
   /charenc@0.0.2:
