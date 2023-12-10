@@ -23,6 +23,15 @@ export const cmdPrompt = {
 			.setName("text")
 			.setDescription(`The prompt text. Max ${maxWords} words.`)
 			.setMaxLength(maxChars))
+		.addStringOption(new SlashCommandStringOption()
+			.setName("focus")
+			.addChoices(
+				{ name: "creative", "value": "Creative and random" },
+				{ name: "balanced", "value": "Balanced" },
+				{ name: "focused", "value": "Focused and deterministic" },
+			)
+			.setDescription("Controls the temperature of the model. Defaults to balanced.")
+			.setRequired(false))
 		.addBooleanOption(new SlashCommandBooleanOption()
 			.setName("ppp")
 			.setDescription("Pre process the prompt? (translate) [default True]"))
@@ -51,7 +60,8 @@ export const cmdPrompt = {
 		counters.set(username, eventNumber);
 
 		try {
-			const reply = await interaction.reply(`[${eventId.toString().padStart(3, "0")} <:cattTTottoo:1173400051482112101> ${eventNumber}] Thinking...`);
+			let waitingMessage = `[${eventId.toString().padStart(3, "0")} <:cattTTottoo:1173400051482112101> ${eventNumber}] Thinking...`;
+			const reply = await interaction.reply(waitingMessage + " *(waiting to start)*");
 
 			// get prompt, optionally translate
 			let prompt = content;
@@ -63,34 +73,75 @@ export const cmdPrompt = {
 
 			// todo: message thread support
 
-			sendPrompt(prompt, username, displayName).then(async res => {
-				let text = res[0];
-				if (ppr)
-					text = (await translate(text, { to: "cs" })).text;
+			const focus = interaction.options.getString("focus") ?? "balanced";
+			const temperature = focus === "creative" ? 0.8 : focus === "focused" ? 0.2 : 0.5;
 
-				console.debug(chalk.bgGreen("###"), `[${chalk.gray(username)} ${chalk.yellow(eventNumber)}]`, res[0]);
-				console.info(chalk.cyanBright("<<<"), `[${chalk.gray(username)} ${chalk.yellow(eventNumber)}]`, text);
+			const requestBegin = Date.now();
+			const response = sendPrompt(prompt, username, temperature);
+			let firstUpdate = 0;
+			let lastUpdate = Date.now();
+			let totalChunks = 0;
+			let responseText = "";
 
-				try {
-					// const regenerateBtn = new ButtonBuilder()
-					// 	.setCustomId(`regenerate:${eventId}`)
-					// 	.setLabel("Regenerate")
-					// 	.setEmoji("🔁")
-					// 	.setStyle(ButtonStyle.Secondary);
+			for await (const r of response) {
+				if (firstUpdate === 0) firstUpdate = Date.now();
+				totalChunks++;
+				if (!r) continue;
+				responseText += r;
 
-					// const row = new ActionRowBuilder<ButtonBuilder>()
-					// 	.addComponents(regenerateBtn);
+				console.debug(chalk.greenBright("###"),
+					`[${chalk.gray(username)} ${chalk.yellow(eventNumber)} ${chalk.greenBright(totalChunks)}]`, responseText);
 
-					const payload = MessagePayload.create(interaction, {
-						content: text,
-						// components: [row]
-					});
-					await reply.edit(payload);
+				// Periodically update the message while waiting for the response
+				const now = Date.now();
+				if (now - lastUpdate > 5000) {
+					lastUpdate = now;
+					try {
+						await reply.edit(waitingMessage += `${totalChunks}...`);
+					}
+					catch (e) {
+						console.error(e);
+					}
 				}
-				catch (e) {
-					console.error(e);
-				}
-			});
+			}
+
+			const text = ppr
+				? (await translate(responseText, { to: "cs" })).text
+				: responseText;
+
+			console.info(chalk.cyanBright("<<<"), `[${chalk.gray(username)} ${chalk.yellow(eventNumber)}]`, text);
+
+			try {
+				// const regenerateBtn = new ButtonBuilder()
+				// 	.setCustomId(`regenerate:${eventId}`)
+				// 	.setLabel("Regenerate")
+				// 	.setEmoji("🔁")
+				// 	.setStyle(ButtonStyle.Secondary);
+
+				// const row = new ActionRowBuilder<ButtonBuilder>()
+				// 	.addComponents(regenerateBtn);
+
+				const now = Date.now();
+				const requestTime = (now - requestBegin) / 1000;
+				const time = (now - firstUpdate) / 1000;
+				const length = responseText.length;
+				const words = responseText.split(" ").length;
+				const avgWordsPerSec = (words / time).toFixed(2);
+				const totalWordLength = responseText.split(" ").map(s => s.length).reduce((a, b) => a + b, 0);
+				const avgWordLength = (totalWordLength / words).toFixed(2);
+				const avgCharPerSec = (length / time).toFixed(2);
+
+				const debug = `||\`${totalChunks}ch@${time.toFixed(3)}s(${requestTime.toFixed(3)}s), l=${length}c(wl=${totalWordLength},w=${words}) awl=${avgWordLength} ${avgWordsPerSec}w/s ${avgCharPerSec}c/s\`||`;
+
+				const payload = MessagePayload.create(interaction, {
+					content: text + (text.endsWith("\n") ? "" : "\n") + debug,
+					// components: [row]
+				});
+				await reply.edit(payload);
+			}
+			catch (e) {
+				console.error(e);
+			}
 		}
 		catch (e) {
 			console.error(e);
