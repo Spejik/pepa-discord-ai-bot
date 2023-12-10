@@ -34,3 +34,23 @@ ASSISTANT: `,
 
 	return res.choices.map(c => c.text);
 }
+
+export async function* sendLongPrompt(prompt: string, username: string): AsyncGenerator<string, void, unknown> {
+	if (username)
+		username = `${username}`;
+
+	const res = await openai.completions.create({
+		prompt: ``,
+		model: "xwin-mlewd",
+		max_tokens: 1024,
+		temperature: 0.85,
+		n: 1,
+		stream: true
+	});
+
+	for await (const chunk of res) {
+		console.log(chunk.choices[0].text);
+		yield chunk.choices[0].text;
+	}
+
+}

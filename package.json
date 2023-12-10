@@ -1,6 +1,6 @@
 {
   "name": "llama-ai-discord",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "",
   "main": "index.js",
   "scripts": {
@@ -14,9 +14,11 @@
     "discord.js": "^14.14.0",
     "dotenv": "^16.3.1",
     "google-translate-api-x": "^10.6.7",
+    "leveldown": "^6.1.1",
     "openai": "^4.17.4"
   },
   "devDependencies": {
+    "@types/leveldown": "^4.0.6",
     "ts-node": "^10.9.1"
   }
 }
