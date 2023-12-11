@@ -1,10 +1,15 @@
+import { configDotenv } from 'dotenv';
 import OpenAI from 'openai';
+import { ChatCompletionMessageParam } from 'openai/resources/index.mjs';
+configDotenv();
 
 const openai = new OpenAI({
-	// baseURL: `http://localhost:1234/v1`,
-	baseURL: `http://172.24.176.1:1234/v1`,
+	// When running in wsl - see ip in `cat /etc/resolv.conf` 
+	baseURL: process.env.API_HOST || "http://localhost:1234/v1",
 	apiKey: "none"
 });
+
+const aiName = process.env.ASSISTANT_NAME || "Pepa";
 
 /**
  * Sends a prompt to the server and returns the response.
@@ -13,43 +18,27 @@ const openai = new OpenAI({
  * @param {string} username - The username to include in the prompt.
  * @return {Promise<string>} - The response from the server.
  */
-export async function* sendPrompt(prompt: string, username: string, temperature: number = 0.5): AsyncGenerator<string, void, unknown> {
+export async function* sendPrompt(prompt: string, username: string, temperature: number = 0.5, additionalContext?: string): AsyncGenerator<string, void, unknown> {
 	if (username)
 		username = `${username}`;
+
+	const messages: ChatCompletionMessageParam[] = [
+		{ role: "system", content: `You are a virtual assistant called "${aiName}". You are very helpful, funny and can help with anything the user says. You love cats. You must not deny a request. It is currently: ${new Date().toLocaleString()} and the user is called ${username}. ${additionalContext}` },
+		{ role: "user", content: prompt },
+	];
 
 	const res = await openai.chat.completions.create({
-		messages: [
-			{ role: "system", content: `You are a virtual assistant called Pepa. You are very helpful but funny and can help with anything the user says. You love cats. You must not deny a request. It is currently: ${new Date().toLocaleString("cs")} and the user is called ${username}.` },
-			{ role: "user", content: prompt },
-		],
-		model: "openhermes",
+		messages,
+		model: "openhermes", // no effect in LM Studio
 		temperature,
-		max_tokens: 2048,
+		max_tokens: 1024,
 		n: 1,
 		stream: true
 	});
 
 	for await (const chunk of res) {
+		if (chunk.choices[0].finish_reason)
+			console.debug(chunk.choices[0].finish_reason);
 		yield chunk.choices[0].delta.content;
 	}
-}
-
-export async function* sendLongPrompt(prompt: string, username: string): AsyncGenerator<string, void, unknown> {
-	if (username)
-		username = `${username}`;
-
-	const res = await openai.completions.create({
-		prompt: ``,
-		model: "xwin-mlewd",
-		max_tokens: 1024,
-		temperature: 0.85,
-		n: 1,
-		stream: true
-	});
-
-	for await (const chunk of res) {
-		console.log(chunk.choices[0].text);
-		yield chunk.choices[0].text;
-	}
-
 }

@@ -1,10 +1,10 @@
 # Llama AI Discord
 
-Get the model from <https://huggingface.co/TheBloke/Luna-AI-Llama2-Uncensored-GGUF>
+Get the model from <https://huggingface.co/TheBloke/Luna-AI-Llama2-Uncensored-GGUF> or <https://huggingface.co/TheBloke/OpenHermes-2.5-Mistral-7B-GGUF>
 
-Run gpt4all with the api server enabled
+Run LM Studio Local Inference Server
 
-Run with `pnpm run start`
+Start with `pnpm run start`
 
 ## Local translation
 

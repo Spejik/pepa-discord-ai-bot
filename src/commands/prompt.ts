@@ -2,6 +2,7 @@
 import { ChatInputCommandInteraction, MessagePayload, SlashCommandBooleanOption, SlashCommandBuilder, SlashCommandStringOption } from "discord.js";
 import translate from 'google-translate-api-x';
 import { sendPrompt } from "../sendPrompt";
+import { contexts } from "./contexts";
 
 const avgWordLength = 8.05;
 const maxWordLength = 20;
@@ -24,25 +25,31 @@ export const cmdPrompt = {
 			.setDescription(`The prompt text. Max ${maxWords} words.`)
 			.setMaxLength(maxChars))
 		.addStringOption(new SlashCommandStringOption()
-			.setName("focus")
+			.setName("temp")
 			.addChoices(
-				{ name: "creative", "value": "Creative and random" },
-				{ name: "balanced", "value": "Balanced" },
-				{ name: "focused", "value": "Focused and deterministic" },
-			)
-			.setDescription("Controls the temperature of the model. Defaults to balanced.")
-			.setRequired(false))
+				{ name: "Precise", value: "0.14" },
+				{ name: "Focused and deterministic", value: "0.22" },
+				{ name: "Balanced", value: "0.4" },
+				{ name: "Creative and random", value: "0.6" },
+				{ name: "Deranged and lobotomized", value: "0.8" })
+			.setDescription("Controls the temperature of the model. [default Balanced]"))
+		.addStringOption(new SlashCommandStringOption()
+			.setName("ctx") // TODO: implement
+			.addChoices(...Object.keys(contexts)
+				.map((name) => ({ name, value: name })))
+			.setDescription("Additional context to use for the prompt. Defaults to none."))
 		.addBooleanOption(new SlashCommandBooleanOption()
 			.setName("ppp")
-			.setDescription("Pre process the prompt? (translate) [default True]"))
+			.setDescription("Pre-process the prompt? (translate) [default False]"))
 		.addBooleanOption(new SlashCommandBooleanOption()
 			.setName("ppr")
-			.setDescription("Post process the response? (translate) [default False]")),
+			.setDescription("Post-process the response? (translate) [default False]")),
 
 	async execute(interaction: ChatInputCommandInteraction) {
 		const chalk = (await import("chalk")).default;
 
-		const ppp = interaction.options.getBoolean("ppp") ?? true;
+		// In case the model doesn't handle anything else than english well, translate it
+		const ppp = interaction.options.getBoolean("ppp") ?? false;
 		const ppr = interaction.options.getBoolean("ppr") ?? false;
 		const content = interaction.options.getString("text").substring(0, maxChars)
 			.split(" ")
@@ -53,7 +60,6 @@ export const cmdPrompt = {
 			.join(" ");
 
 		const username = interaction.user.username;
-		const displayName = interaction.user.displayName;
 
 		const eventId = ++eventCount;
 		const eventNumber = (counters.get(username) ?? 0) + 1;
@@ -69,25 +75,36 @@ export const cmdPrompt = {
 				prompt = (await translate(content, { to: "en", autoCorrect: true })).text;
 			prompts.set(eventId, prompt);
 
-			console.info(chalk.cyan(eventId.toString().padStart(3, "0")), `[${chalk.gray(username)} ${chalk.yellow(eventNumber)}]`, prompt);
+			console.info(chalk.bgCyanBright(eventId.toString().padStart(3, "0")),
+				`[${chalk.gray(username)} ${chalk.yellow(eventNumber)}]`, prompt);
 
 			// todo: message thread support
 
-			const focus = interaction.options.getString("focus") ?? "balanced";
-			const temperature = focus === "creative" ? 0.8 : focus === "focused" ? 0.2 : 0.5;
+			const rawTemp = interaction.options.getString("temp");
+			let temp = +rawTemp || 0.4;
+			temp = Math.min(Math.max(temp, 0.01), 0.99);
+
+			const ctxOption = interaction.options.getString("ctx");
+			const additionalContext = ctxOption ? contexts[ctxOption] : "";
 
 			const requestBegin = Date.now();
-			const response = sendPrompt(prompt, username, temperature);
+			const response = sendPrompt(prompt, username, temp, additionalContext);
+
 			let firstUpdate = 0;
 			let lastUpdate = Date.now();
 			let totalChunks = 0;
 			let responseText = "";
+			let chunkSizes: number[] = [];
 
 			for await (const r of response) {
-				if (firstUpdate === 0) firstUpdate = Date.now();
+				if (firstUpdate === 0)
+					firstUpdate = Date.now();
 				totalChunks++;
-				if (!r) continue;
+
+				if (!r)
+					continue;
 				responseText += r;
+				chunkSizes.push(r.length);
 
 				console.debug(chalk.greenBright("###"),
 					`[${chalk.gray(username)} ${chalk.yellow(eventNumber)} ${chalk.greenBright(totalChunks)}]`, responseText);
@@ -105,6 +122,7 @@ export const cmdPrompt = {
 				}
 			}
 
+			// Optionally translate the response back to the user's language
 			const text = ppr
 				? (await translate(responseText, { to: "cs" })).text
 				: responseText;
@@ -112,6 +130,7 @@ export const cmdPrompt = {
 			console.info(chalk.cyanBright("<<<"), `[${chalk.gray(username)} ${chalk.yellow(eventNumber)}]`, text);
 
 			try {
+				// TODO: implement regenerate + edit/delete (from internal history)
 				// const regenerateBtn = new ButtonBuilder()
 				// 	.setCustomId(`regenerate:${eventId}`)
 				// 	.setLabel("Regenerate")
@@ -121,6 +140,7 @@ export const cmdPrompt = {
 				// const row = new ActionRowBuilder<ButtonBuilder>()
 				// 	.addComponents(regenerateBtn);
 
+				// Append various stats to the message
 				const now = Date.now();
 				const requestTime = (now - requestBegin) / 1000;
 				const time = (now - firstUpdate) / 1000;
@@ -130,11 +150,19 @@ export const cmdPrompt = {
 				const totalWordLength = responseText.split(" ").map(s => s.length).reduce((a, b) => a + b, 0);
 				const avgWordLength = (totalWordLength / words).toFixed(2);
 				const avgCharPerSec = (length / time).toFixed(2);
+				const avgChunkSize = chunkSizes.reduce((a, b) => a + b, 0) / totalChunks;
+				const avgChunkSizePerSec = (avgChunkSize / time).toFixed(2);
+				const maxChunkSize = Math.max(...chunkSizes);
 
-				const debug = `||\`${totalChunks}ch@${time.toFixed(3)}s(${requestTime.toFixed(3)}s), l=${length}c(wl=${totalWordLength},w=${words}) awl=${avgWordLength} ${avgWordsPerSec}w/s ${avgCharPerSec}c/s\`||`;
+				const debug = `||\`${totalChunks}ch@${time.toFixed(3)}s(${requestTime.toFixed(3)}s), l=${length}c(wl=${totalWordLength},w=${words}) awl=${avgWordLength} ${avgWordsPerSec}w/s ${avgCharPerSec}c/s achs=${avgChunkSize.toFixed(2)} ${avgChunkSizePerSec}ch/s mxchs=${maxChunkSize}\`||`;
+
+				const overflow = text.length > 1990;
+				const messageText = overflow
+					? text.slice(0, 1990 - debug.length) + "...[EOL]"
+					: text;
 
 				const payload = MessagePayload.create(interaction, {
-					content: text + (text.endsWith("\n") ? "" : "\n") + debug,
+					content: messageText + (text.endsWith("\n") ? "" : "\n") + debug,
 					// components: [row]
 				});
 				await reply.edit(payload);
