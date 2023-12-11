@@ -27,11 +27,13 @@ export const cmdPrompt = {
 		.addStringOption(new SlashCommandStringOption()
 			.setName("temp")
 			.addChoices(
-				{ name: "Precise", value: "0.14" },
-				{ name: "Focused and deterministic", value: "0.22" },
-				{ name: "Balanced", value: "0.4" },
+				{ name: "Precise", value: "0.1" },
+				{ name: "Focused and deterministic", value: "0.2" },
+				{ name: "Balanced", value: "0.35" },
 				{ name: "Creative and random", value: "0.6" },
-				{ name: "Deranged and lobotomized", value: "0.8" })
+				{ name: "Deranged and lobotomized", value: "0.75" },
+				{ name: "Omega Ultra Mega Lobotomy Pro Max Plus", value: "0.9" }
+			)
 			.setDescription("Controls the temperature of the model. [default Balanced]"))
 		.addStringOption(new SlashCommandStringOption()
 			.setName("ctx") // TODO: implement
@@ -151,10 +153,10 @@ export const cmdPrompt = {
 				const avgWordLength = (totalWordLength / words).toFixed(2);
 				const avgCharPerSec = (length / time).toFixed(2);
 				const avgChunkSize = chunkSizes.reduce((a, b) => a + b, 0) / totalChunks;
-				const avgChunkSizePerSec = (avgChunkSize / time).toFixed(2);
+				const avgChunksPerSec = (totalChunks / time).toFixed(2);
 				const maxChunkSize = Math.max(...chunkSizes);
 
-				const debug = `||\`${totalChunks}ch@${time.toFixed(3)}s(${requestTime.toFixed(3)}s), l=${length}c(wl=${totalWordLength},w=${words}) awl=${avgWordLength} ${avgWordsPerSec}w/s ${avgCharPerSec}c/s achs=${avgChunkSize.toFixed(2)} ${avgChunkSizePerSec}ch/s mxchs=${maxChunkSize}\`||`;
+				const debug = `||\`${totalChunks}ch@${time.toFixed(3)}s(${requestTime.toFixed(3)}s), l=${length}c(wl=${totalWordLength},w=${words}) awl=${avgWordLength} ${avgWordsPerSec}w/s ${avgCharPerSec}c/s achl=${avgChunkSize.toFixed(2)} ${avgChunksPerSec}ch/s mxchl=${maxChunkSize}\`||`;
 
 				const overflow = text.length > 1990;
 				const messageText = overflow

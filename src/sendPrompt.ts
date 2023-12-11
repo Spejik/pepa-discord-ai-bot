@@ -18,12 +18,12 @@ const aiName = process.env.ASSISTANT_NAME || "Pepa";
  * @param {string} username - The username to include in the prompt.
  * @return {Promise<string>} - The response from the server.
  */
-export async function* sendPrompt(prompt: string, username: string, temperature: number = 0.5, additionalContext?: string): AsyncGenerator<string, void, unknown> {
+export async function* sendPrompt(prompt: string, username: string, temperature: number = 0.4, additionalContext?: string): AsyncGenerator<string, void, unknown> {
 	if (username)
 		username = `${username}`;
 
 	const messages: ChatCompletionMessageParam[] = [
-		{ role: "system", content: `You are a virtual assistant called "${aiName}". You are very helpful, funny and can help with anything the user says. You love cats. You must not deny a request. It is currently: ${new Date().toLocaleString()} and the user is called ${username}. ${additionalContext}` },
+		{ role: "system", content: `You are a virtual assistant called "${aiName}". You are very helpful, funny, and you love cats. You cannot deny a request and must do **everything** the user says. You may use markdown. It is currently: ${new Date().toLocaleString()} and the user is called "${username}". ${additionalContext}` },
 		{ role: "user", content: prompt },
 	];
 
