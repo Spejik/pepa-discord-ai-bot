@@ -1,13 +1,10 @@
-# Llama AI Discord
+# Pepa Discord AI Bot
 
-Get the model from <https://huggingface.co/TheBloke/Luna-AI-Llama2-Uncensored-GGUF> or <https://huggingface.co/TheBloke/OpenHermes-2.5-Mistral-7B-GGUF>
+## Getting started
 
-Run LM Studio Local Inference Server
-
-Start with `pnpm run start`
-
-## Local translation
-
-To use local, higher quality translations, follow the install instructions here <https://github.com/Helsinki-NLP/OpusTranslationService>
-
-WIP
+1. Run `pnpm i` and start with `pnpm run start`
+2. Get a model.  
+   Some that work well are [Luna AI Llama2 Uncensored](https://huggingface.co/TheBloke/Luna-AI-Llama2-Uncensored-GGUF) or [OpenHermes Mistral](https://huggingface.co/TheBloke/OpenHermes-2.5-Mistral-7B-GGUF)
+3. Run [LM Studio](https://lmstudio.ai/) Local Inference Server.  
+   Make sure the model has correct settings and prompt formatting preset.  
+   You should also increase the number of cpu threads. (default is 4, 10-14 works fine)
